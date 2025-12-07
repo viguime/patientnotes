@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { NoteForm } from '../components/NoteForm';
 
@@ -13,23 +13,33 @@ describe('NoteForm', () => {
   it('renders form fields correctly', () => {
     render(<NoteForm onSubmit={mockOnSubmit} />);
 
+    expect(screen.getByLabelText(/patient name/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/patient id/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/note type/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/note content/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /add note/i })).toBeInTheDocument();
   });
 
-  it('validates patient ID format', async () => {
+  it('patient ID field is always disabled', () => {
     render(<NoteForm onSubmit={mockOnSubmit} />);
 
     const patientIdInput = screen.getByLabelText(/patient id/i);
+    expect(patientIdInput).toBeDisabled();
+  });
+
+  it('validates patient name is required', async () => {
+    render(<NoteForm onSubmit={mockOnSubmit} />);
+
+    const contentInput = screen.getByLabelText(/note content/i);
     const submitButton = screen.getByRole('button', { name: /add note/i });
 
-    await userEvent.type(patientIdInput, 'invalid-id');
-    await userEvent.click(submitButton);
+    await act(async () => {
+      await userEvent.type(contentInput, 'This is a test note with enough content.');
+      await userEvent.click(submitButton);
+    });
 
     await waitFor(() => {
-      expect(screen.getByText(/invalid patient id format/i)).toBeInTheDocument();
+      expect(screen.getByText(/patient name.*required/i)).toBeInTheDocument();
     });
 
     expect(mockOnSubmit).not.toHaveBeenCalled();
@@ -38,11 +48,15 @@ describe('NoteForm', () => {
   it('validates content minimum length', async () => {
     render(<NoteForm onSubmit={mockOnSubmit} />);
 
+    const nameInput = screen.getByLabelText(/patient name/i);
     const contentInput = screen.getByLabelText(/note content/i);
     const submitButton = screen.getByRole('button', { name: /add note/i });
 
-    await userEvent.type(contentInput, 'Short');
-    await userEvent.click(submitButton);
+    await act(async () => {
+      await userEvent.type(nameInput, 'John Doe');
+      await userEvent.type(contentInput, 'Short');
+      await userEvent.click(submitButton);
+    });
 
     await waitFor(() => {
       expect(screen.getByText(/content must be at least 10 characters/i)).toBeInTheDocument();
@@ -51,44 +65,33 @@ describe('NoteForm', () => {
     expect(mockOnSubmit).not.toHaveBeenCalled();
   });
 
-  it('submits form with valid data', async () => {
+  it('submits form with valid data for initial assessment', async () => {
     mockOnSubmit.mockResolvedValue(undefined);
     render(<NoteForm onSubmit={mockOnSubmit} />);
 
-    const patientIdInput = screen.getByLabelText(/patient id/i);
+    const nameInput = screen.getByLabelText(/patient name/i);
     const typeSelect = screen.getByLabelText(/note type/i);
     const contentInput = screen.getByLabelText(/note content/i);
     const submitButton = screen.getByRole('button', { name: /add note/i });
 
-    await userEvent.type(patientIdInput, '123e4567-e89b-12d3-a456-426614174000');
-    await userEvent.selectOptions(typeSelect, 'interim');
-    await userEvent.type(contentInput, 'Patient is responding well to treatment.');
-    await userEvent.click(submitButton);
-
-    await waitFor(() => {
-      expect(mockOnSubmit).toHaveBeenCalledWith({
-        patientId: '123e4567-e89b-12d3-a456-426614174000',
-        type: 'interim',
-        content: 'Patient is responding well to treatment.',
-      });
+    await act(async () => {
+      await userEvent.type(nameInput, 'John Doe');
+      await userEvent.selectOptions(typeSelect, 'initial');
+      await userEvent.type(contentInput, 'Patient presenting with initial symptoms.');
+      await userEvent.click(submitButton);
     });
-  });
-
-  it('clears form after successful submission', async () => {
-    mockOnSubmit.mockResolvedValue(undefined);
-    render(<NoteForm onSubmit={mockOnSubmit} />);
-
-    const patientIdInput = screen.getByLabelText(/patient id/i) as HTMLInputElement;
-    const contentInput = screen.getByLabelText(/note content/i) as HTMLTextAreaElement;
-    const submitButton = screen.getByRole('button', { name: /add note/i });
-
-    await userEvent.type(patientIdInput, '123e4567-e89b-12d3-a456-426614174000');
-    await userEvent.type(contentInput, 'This is a test note with enough content.');
-    await userEvent.click(submitButton);
 
     await waitFor(() => {
-      expect(patientIdInput.value).toBe('');
-      expect(contentInput.value).toBe('');
+      expect(mockOnSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({
+          patientName: 'John Doe',
+          type: 'initial',
+          content: 'Patient presenting with initial symptoms.',
+        })
+      );
+      // Patient ID should be auto-generated (will be a UUID)
+      const callArg = mockOnSubmit.mock.calls[0][0];
+      expect(callArg.patientId).toMatch(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i);
     });
   });
 });

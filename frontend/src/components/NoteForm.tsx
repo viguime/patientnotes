@@ -33,16 +33,16 @@ export const NoteForm: React.FC<NoteFormProps> = ({ onSubmit, isLoading = false,
   // Update form when a patient is selected
   useEffect(() => {
     if (selectedPatient) {
-      setValue('patientId', selectedPatient.id);
-      setValue('patientName', selectedPatient.name);
-      setValue('type', 'interim'); // Default to interim when selecting existing patient
+      setValue('patientId', selectedPatient.id, { shouldValidate: true });
+      setValue('patientName', selectedPatient.name, { shouldValidate: true });
+      setValue('type', 'interim', { shouldValidate: true }); // Default to interim when selecting existing patient
     }
   }, [selectedPatient, setValue]);
 
   // Clear patient ID when switching to initial assessment
   useEffect(() => {
     if (noteType === 'initial') {
-      setValue('patientId', '');
+      setValue('patientId', '', { shouldValidate: true });
     }
   }, [noteType, setValue]);
 
