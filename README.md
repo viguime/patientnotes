@@ -59,15 +59,21 @@ patientnotes/
 ### Prerequisites
 
 - Node.js 20+
-- Docker & Docker Compose (optional)
+- Docker & Docker Desktop (for containerized deployment)
+- PostgreSQL 16 (for local development, or use Docker)
 
-### Option 1: Using Docker Compose (Recommended)
+### Option 1: Using Docker (Bonus for Challenge Submission) ⭐
+
+**Important:** Make sure Docker Desktop is running first!
 
 ```bash
 # Clone the repository
 cd patientnotes
 
-# Start all services
+# Run automated Docker setup and tests
+./test-docker.sh
+
+# Or manually:
 docker-compose up --build
 
 # Access the applications:
@@ -76,7 +82,18 @@ docker-compose up --build
 # Health check: http://localhost:3000/health
 ```
 
-### Option 2: Manual Setup
+**See [DOCKER.md](./DOCKER.md) for detailed Docker setup and troubleshooting.**
+
+### Option 2: Manual Setup (Local Development)
+
+**For active development with hot-reload:**
+
+```bash
+# Use the automated script
+./start-local.sh
+
+# Or manually:
+```
 
 #### Backend
 
@@ -84,6 +101,7 @@ docker-compose up --build
 cd backend
 npm install
 cp .env.example .env
+# Edit .env to set DB_TYPE=postgres and your PostgreSQL credentials
 npm run dev
 ```
 
@@ -99,6 +117,22 @@ npm start
 ```
 
 Frontend will run on `http://localhost:3001`
+
+#### PostgreSQL Setup (Local)
+
+```bash
+# Install PostgreSQL (if not already installed)
+brew install postgresql@16
+
+# Start PostgreSQL
+brew services start postgresql@16
+
+# Create database
+/opt/homebrew/opt/postgresql@16/bin/createdb patient_notes
+
+# Apply schema
+/opt/homebrew/opt/postgresql@16/bin/psql patient_notes < backend/src/infrastructure/database/schema.sql
+```
 
 ## 🧪 Running Tests
 
@@ -385,6 +419,13 @@ function App() {
 ## 🐳 Docker Commands
 
 ```bash
+# Quick start with automated testing
+./test-docker.sh
+
+# Switch back to local development
+./start-local.sh
+
+# Manual Docker commands:
 # Build and start all services
 docker-compose up --build
 
@@ -393,6 +434,13 @@ docker-compose up -d
 
 # View logs
 docker-compose logs -f
+
+# View specific service logs
+docker-compose logs -f backend
+docker-compose logs -f frontend
+
+# Check service status
+docker-compose ps
 
 # Stop all services
 docker-compose down
@@ -403,7 +451,12 @@ docker-compose down -v
 # Rebuild specific service
 docker-compose build backend
 docker-compose up backend
+
+# Restart a service
+docker-compose restart backend
 ```
+
+**For complete Docker setup guide, see [DOCKER.md](./DOCKER.md)**
 
 ## 🧪 Testing
 
