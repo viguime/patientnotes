@@ -168,7 +168,7 @@ The backend follows Uncle Bob's Clean Architecture principles:
 
 1. **Domain Layer** (Core Business Logic)
    - Entities: `Note` entity with business rules
-   - Use Cases: `CreateNoteUseCase`, `GetNotesUseCase`
+   - Use Cases: `CreateNoteUseCase`, `GetNotesUseCase`, `GetAllNotesUseCase`, `GetAllPatientsUseCase`
    - Validation: Zod schemas for input validation
 
 2. **Infrastructure Layer** (External Dependencies)
@@ -401,12 +401,12 @@ function App() {
 ## 🧹 Validation Rules
 
 ### Patient ID
-- Auto-generated
+- Auto-generated for initial assessments
 - Example: `123e4567-e89b-12d3-a456-426614174000`
 
 ### Patient Name
 - Required for all note types
-- Minimum: 2 characters
+- Minimum: 1 character
 - Maximum: 100 characters
 
 ### Note Type
@@ -462,17 +462,21 @@ docker-compose restart backend
 
 ### Backend Test Coverage
 
-- Unit tests for use cases
-- Unit tests for repositories
-- Integration tests for API endpoints
-- Validation tests
+- **21 tests passing** across 3 test suites
+- **65% overall coverage**, 100% domain layer coverage
+- Unit tests for use cases (CreateNoteUseCase, GetNotesUseCase, GetAllNotesUseCase, GetAllPatientsUseCase)
+- Unit tests for repositories (InMemoryNoteRepository)
+- Integration tests for all API endpoints
+- Validation tests with Zod schemas
 
 ### Frontend Test Coverage
 
+- **5 tests passing** in 1 test suite
+- NoteForm component: 87% coverage
 - Component rendering tests
-- Form validation tests
-- User interaction tests
-- API integration tests
+- Form validation tests (required fields, content length)
+- User interaction tests with React Testing Library
+- Auto-ID generation verification
 
 ## 🔐 Security Features
 
@@ -492,7 +496,7 @@ docker-compose restart backend
 - LocalStorage persistence for selected patient
 - Foreign key relationships with cascade delete
 
-🔮 **Future Enhancements:**
+🔮 **Suggested Future Enhancements:**
 - [ ] Authentication & authorization
 - [ ] Advanced patient search and filtering
 - [ ] Note editing and deletion
