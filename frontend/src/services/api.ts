@@ -26,4 +26,20 @@ export const notesApi = {
     }
     return response.data.data;
   },
+
+  getAllNotes: async (): Promise<Note[]> => {
+    const response = await api.get<ApiResponse<Note[]>>('/notes/all');
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to fetch all notes');
+    }
+    return response.data.data;
+  },
+
+  getAllPatients: async (): Promise<Array<{ id: string; name: string }>> => {
+    const response = await api.get<ApiResponse<Array<{ id: string; name: string }>>>('/notes/patients/all');
+    if (!response.data.success || !response.data.data) {
+      throw new Error(response.data.error || 'Failed to fetch patients');
+    }
+    return response.data.data;
+  },
 };

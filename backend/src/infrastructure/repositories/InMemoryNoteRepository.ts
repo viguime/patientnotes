@@ -14,6 +14,26 @@ export class InMemoryNoteRepository implements INoteRepository {
     return this.notes.get(patientId) || [];
   }
 
+  async findAll(): Promise<Note[]> {
+    const allNotes: Note[] = [];
+    this.notes.forEach((notes) => {
+      allNotes.push(...notes);
+    });
+    return allNotes.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async findAllPatients(): Promise<Array<{ id: string; name: string }>> {
+    const patientsMap = new Map<string, string>();
+    this.notes.forEach((notes, patientId) => {
+      if (notes.length > 0) {
+        patientsMap.set(patientId, notes[0].patientName);
+      }
+    });
+    return Array.from(patientsMap.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   // Helper method for testing
   clear(): void {
     this.notes.clear();

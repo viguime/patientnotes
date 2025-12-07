@@ -45,30 +45,30 @@ services:
     networks:
       - patient-notes-network
 
-  # PostgreSQL (Optional - uncomment to use instead of in-memory)
-  # postgres:
-  #   image: postgres:16-alpine
-  #   container_name: patient-notes-db
-  #   ports:
-  #     - "5432:5432"
-  #   environment:
-  #     - POSTGRES_DB=patient_notes
-  #     - POSTGRES_USER=postgres
-  #     - POSTGRES_PASSWORD=postgres
-  #   volumes:
-  #     - postgres_data:/var/lib/postgresql/data
-  #     - ./backend/src/infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
-  #   healthcheck:
-  #     test: ["CMD-SHELL", "pg_isready -U postgres"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
-  #   networks:
-  #     - patient-notes-network
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: patient-notes-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=patient_notes
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backend/src/infrastructure/database/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - patient-notes-network
 
 networks:
   patient-notes-network:
     driver: bridge
 
-# volumes:
-#   postgres_data:
+volumes:
+  postgres_data:

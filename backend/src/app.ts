@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import { createNoteRepository } from './infrastructure/config/database';
 import { CreateNoteUseCase } from './domain/use-cases/CreateNoteUseCase';
 import { GetNotesUseCase } from './domain/use-cases/GetNotesUseCase';
+import { GetAllNotesUseCase } from './domain/use-cases/GetAllNotesUseCase';
+import { GetAllPatientsUseCase } from './domain/use-cases/GetAllPatientsUseCase';
 import { NotesController } from './presentation/controllers/NotesController';
 import { createNotesRouter } from './presentation/routes/notesRoutes';
 import { errorHandler } from './presentation/middlewares/errorHandler';
@@ -28,7 +30,14 @@ app.use(
 const noteRepository = createNoteRepository();
 const createNoteUseCase = new CreateNoteUseCase(noteRepository);
 const getNotesUseCase = new GetNotesUseCase(noteRepository);
-const notesController = new NotesController(createNoteUseCase, getNotesUseCase);
+const getAllNotesUseCase = new GetAllNotesUseCase(noteRepository);
+const getAllPatientsUseCase = new GetAllPatientsUseCase(noteRepository);
+const notesController = new NotesController(
+  createNoteUseCase, 
+  getNotesUseCase,
+  getAllNotesUseCase,
+  getAllPatientsUseCase
+);
 
 // Routes
 app.use('/notes', createNotesRouter(notesController));

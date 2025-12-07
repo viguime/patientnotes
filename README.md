@@ -2,20 +2,28 @@
 
 A full-stack patient notes management application built with Node.js/Express backend and React frontend, designed with clean architecture principles and configured as a micro frontend module.
 
+Code challenge for a Fullstack position
+
 ## 🎯 Challenge Requirements
 
 ✅ **Backend:**
 - POST `/notes` - Create patient notes
 - GET `/notes/:patientId` - Retrieve notes by patient ID
-- PostgreSQL support with in-memory fallback
+- GET `/notes/all` - Retrieve all notes across all patients
+- GET `/notes/patients/all` - Retrieve all unique patients
+- PostgreSQL with normalized schema (separate patients and notes tables)
 - Input validation using Zod
 - Clean architecture implementation
 
 ✅ **Frontend:**
 - React form for creating notes
+- Patient selector dropdown (view by patient or all patients)
+- Automatic patient ID generation for initial assessments
+- Click-to-select patient from notes list
 - List view for displaying patient notes
 - Tailwind CSS styling
 - Micro Frontend architecture (Webpack Module Federation)
+- LocalStorage persistence for selected patient
 
 ✅ **Bonus:**
 - Unit tests (Jest for backend, Jest + React Testing Library for frontend)
@@ -183,6 +191,24 @@ REACT_APP_API_URL=http://localhost:3000
 
 ## 🐘 PostgreSQL Setup
 
+The application uses a **normalized relational database schema** with separate tables for patients and notes:
+
+### Database Schema
+
+**patients** table:
+- `id` (UUID, PRIMARY KEY)
+- `name` (VARCHAR(100), NOT NULL)
+- `created_at` (TIMESTAMP, NOT NULL)
+
+**notes** table:
+- `id` (UUID, PRIMARY KEY)
+- `patient_id` (UUID, FOREIGN KEY → patients.id, ON DELETE CASCADE)
+- `type` (VARCHAR(20), CHECK constraint)
+- `content` (TEXT, NOT NULL)
+- `created_at` (TIMESTAMP, NOT NULL)
+
+### Setup Instructions
+
 To use PostgreSQL instead of in-memory storage:
 
 1. **Using Docker Compose:**
@@ -222,11 +248,14 @@ POST /notes
 Content-Type: application/json
 
 {
-  "patientId": "123e4567-e89b-12d3-a456-426614174000",
+  "patientId": "123e4567-e89b-12d3-a456-426614174000",  // Optional for initial assessments
+  "patientName": "John Doe",
   "type": "initial",
   "content": "Patient presented with symptoms of fever and cough."
 }
 ```
+
+**Note:** For initial assessments, if `patientId` is omitted or empty, a new UUID will be auto-generated.
 
 **Response:**
 ```json
@@ -235,6 +264,7 @@ Content-Type: application/json
   "data": {
     "id": "456e7890-e89b-12d3-a456-426614174000",
     "patientId": "123e4567-e89b-12d3-a456-426614174000",
+    "patientName": "John Doe",
     "type": "initial",
     "content": "Patient presented with symptoms of fever and cough.",
     "createdAt": "2025-12-07T10:30:00.000Z"
@@ -256,9 +286,41 @@ GET /notes/:patientId
     {
       "id": "456e7890-e89b-12d3-a456-426614174000",
       "patientId": "123e4567-e89b-12d3-a456-426614174000",
+      "patientName": "John Doe",
       "type": "initial",
       "content": "Patient presented with symptoms of fever and cough.",
       "createdAt": "2025-12-07T10:30:00.000Z"
+    }
+  ]
+}
+```
+
+### Get All Notes
+
+```http
+GET /notes/all
+```
+
+Returns all notes across all patients, ordered by creation date (newest first).
+
+### Get All Patients
+
+```http
+GET /notes/patients/all
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "data": [
+    {
+      "id": "123e4567-e89b-12d3-a456-426614174000",
+      "name": "John Doe"
+    },
+    {
+      "id": "789e0123-e89b-12d3-a456-426614174000",
+      "name": "Jane Smith"
     }
   ]
 }
@@ -305,8 +367,13 @@ function App() {
 ## 🧹 Validation Rules
 
 ### Patient ID
-- Must be a valid UUID format
+- Auto-generated
 - Example: `123e4567-e89b-12d3-a456-426614174000`
+
+### Patient Name
+- Required for all note types
+- Minimum: 2 characters
+- Maximum: 100 characters
 
 ### Note Type
 - Must be one of: `initial`, `interim`, `discharge`
@@ -362,15 +429,25 @@ docker-compose up backend
 - XSS prevention (React's built-in escaping)
 - Security headers in Nginx
 
-## 📈 Future Enhancements
+## 📈 Features & Future Enhancements
 
+✅ **Implemented:**
+- Patient selector with dropdown (view by patient or all)
+- Auto-generated patient IDs for initial assessments
+- Click-to-select patient from notes list
+- Normalized database schema (separate patients/notes tables)
+- LocalStorage persistence for selected patient
+- Foreign key relationships with cascade delete
+
+🔮 **Future Enhancements:**
 - [ ] Authentication & authorization
-- [ ] Patient search functionality
+- [ ] Advanced patient search and filtering
 - [ ] Note editing and deletion
 - [ ] File attachments
 - [ ] Real-time updates (WebSockets)
 - [ ] Audit logging
 - [ ] Role-based access control
+- [ ] Patient demographics and medical history
 
 ## 📄 License
 
@@ -388,6 +465,6 @@ This project was created as a coding challenge to demonstrate:
 
 ---
 
-**Author:** Your Name  
+**Author:** Victor Guimarães 
 **Date:** December 2025  
 **Tech Stack:** Node.js, Express, TypeScript, React, PostgreSQL, Docker, Webpack Module Federation, Tailwind CSS

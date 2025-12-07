@@ -8,11 +8,57 @@ import './styles/main.css';
 
 export const PatientNotesApp: React.FC = () => {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [patients, setPatients] = useState<Array<{ id: string; name: string }>>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currentPatientId, setCurrentPatientId] = useState<string | null>(null);
   const [selectedPatient, setSelectedPatient] = useState<{ id: string; name: string } | null>(null);
+  const [viewMode, setViewMode] = useState<'all' | 'patient'>('all');
+
+  // Load all patients and selected patient from localStorage on mount
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        // Fetch all patients
+        const allPatients = await notesApi.getAllPatients();
+        setPatients(allPatients);
+
+        // Load saved patient from localStorage
+        const savedPatient = localStorage.getItem('selectedPatient');
+        if (savedPatient) {
+          const patient = JSON.parse(savedPatient);
+          setSelectedPatient(patient);
+          setViewMode('patient');
+          fetchNotes(patient.id);
+        } else {
+          // If no saved patient, fetch all notes
+          setViewMode('all');
+          fetchAllNotes();
+        }
+      } catch (err) {
+        console.error('Error loading initial data:', err);
+        // Fallback to fetching all notes
+        fetchAllNotes();
+      }
+    };
+    loadData();
+  }, []);
+
+  const fetchAllNotes = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const fetchedNotes = await notesApi.getAllNotes();
+      setNotes(fetchedNotes);
+      setCurrentPatientId(null);
+    } catch (err) {
+      setError('Failed to fetch notes. Please try again.');
+      console.error('Error fetching all notes:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   const fetchNotes = useCallback(async (patientId: string) => {
     setIsLoading(true);
@@ -38,16 +84,19 @@ export const PatientNotesApp: React.FC = () => {
       // Use the patientId from the created note (could be auto-generated)
       const notePatientId = newNote.patientId;
       
-      // If this is for the current patient, add to the list
-      if (notePatientId === currentPatientId) {
-        setNotes((prevNotes) => [newNote, ...prevNotes]);
-      } else {
-        // If switching patients, fetch all notes for this patient
-        await fetchNotes(notePatientId);
-      }
+      // Refresh patient list to include new patient if it's a new one
+      const allPatients = await notesApi.getAllPatients();
+      setPatients(allPatients);
       
       // Update selected patient to the newly created note's patient
-      setSelectedPatient({ id: newNote.patientId, name: newNote.patientName });
+      const patient = { id: newNote.patientId, name: newNote.patientName };
+      setSelectedPatient(patient);
+      setViewMode('patient');
+      // Save to localStorage for persistence across page refreshes
+      localStorage.setItem('selectedPatient', JSON.stringify(patient));
+      
+      // Fetch notes for this patient
+      await fetchNotes(notePatientId);
       
       // Show success feedback (optional)
       console.log('Note added successfully:', newNote);
@@ -60,8 +109,27 @@ export const PatientNotesApp: React.FC = () => {
   };
 
   const handleSelectPatient = (patientId: string, patientName: string) => {
-    setSelectedPatient({ id: patientId, name: patientName });
+    const patient = { id: patientId, name: patientName };
+    setSelectedPatient(patient);
+    setViewMode('patient');
+    // Save to localStorage for persistence across page refreshes
+    localStorage.setItem('selectedPatient', JSON.stringify(patient));
     fetchNotes(patientId);
+  };
+
+  const handlePatientChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const value = e.target.value;
+    if (value === 'all') {
+      setViewMode('all');
+      setSelectedPatient(null);
+      localStorage.removeItem('selectedPatient');
+      fetchAllNotes();
+    } else {
+      const patient = patients.find(p => p.id === value);
+      if (patient) {
+        handleSelectPatient(patient.id, patient.name);
+      }
+    }
   };
 
   return (
@@ -120,6 +188,36 @@ export const PatientNotesApp: React.FC = () => {
           isLoading={isSubmitting}
           selectedPatient={selectedPatient}
         />
+
+        {/* Patient Selector */}
+        <div className="mb-6 bg-white shadow rounded-lg p-4">
+          <label htmlFor="patient-select" className="block text-sm font-medium text-gray-700 mb-2">
+            Select Patient
+          </label>
+          <select
+            id="patient-select"
+            value={viewMode === 'all' ? 'all' : selectedPatient?.id || ''}
+            onChange={handlePatientChange}
+            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm px-3 py-2 border"
+          >
+            <option value="all">All Patients</option>
+            {patients.map((patient) => (
+              <option key={patient.id} value={patient.id}>
+                {patient.name} ({patient.id})
+              </option>
+            ))}
+          </select>
+          {viewMode === 'all' && (
+            <p className="mt-2 text-sm text-gray-500">
+              Viewing notes for all patients
+            </p>
+          )}
+          {viewMode === 'patient' && selectedPatient && (
+            <p className="mt-2 text-sm text-gray-500">
+              Viewing notes for {selectedPatient.name}
+            </p>
+          )}
+        </div>
 
         {/* Notes List */}
         <NotesList 
